@@ -46,11 +46,22 @@ let output_escaped og =
     | c -> print_char c
   done
 
+let output_title location =
+  let title =
+    Printf.sprintf "%s/%s"
+      Filename.(dirname location |> basename)
+      (Filename.basename location)
+  in
+  Printf.printf "\t\t\t<title>";
+  output_escaped title;
+  Printf.printf "</title>\n"
+
 let output_track location duration id =
   Printf.printf "\t\t<track>\n";
   Printf.printf "\t\t\t<location>file://";
   output_escaped location;
   Printf.printf "</location>\n";
+  output_title location;
   Printf.printf "\t\t\t<duration>%Lu</duration>\n" duration;
   Printf.printf "\t\t\t<extension application=\"http://www.videolan.org/vlc/playlist/0\">\n";
   Printf.printf "\t\t\t\t<vlc:id>%d</vlc:id>\n" id;
