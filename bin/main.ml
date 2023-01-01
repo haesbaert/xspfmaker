@@ -9,26 +9,26 @@ let _xspf_header =
 let warn fmt =
   Printf.ksprintf (fun s -> Printf.eprintf "%s\n%!" s) fmt
 
-let process_file oc path =
+let process_file path =
   match Av.open_input path with
   | exception (Avutil.Error e) ->
     warn "%s: error %s" path (Avutil.string_of_error e)
   | handle ->
     (match Av.get_input_duration handle with
      | Some duration when duration > 0L ->
-       Printf.fprintf oc "%s: duration %Lu\n%!" path duration
+       Printf.printf "%s: duration %Lu\n%!" path duration
      | Some duration when duration <= 0L ->
        warn "%s: insane duration %Lu, using 10" path duration
      | _ ->
        warn "%s: NO DURATION !!!" path;
        Av.close handle)
 
-let traverse oc path =
+let traverse path =
   let rec loop path =
     match (Unix.LargeFile.stat path).st_kind with
     | exception Unix.Unix_error (errno, _, _) ->
       warn "%s: %s" path (Unix.error_message errno)
-    | S_REG -> process_file oc path
+    | S_REG -> process_file path
     | S_DIR ->
       (match Sys.readdir path with
        | children ->
@@ -40,41 +40,31 @@ let traverse oc path =
   in
   loop path
 
-let paths_of_stdin ic oc =
+let paths_of_stdin () =
   let rec loop () =
-    match input_line ic with
-    | path -> traverse oc path; loop ()
+    match input_line stdin with
+    | path -> traverse path; loop ()
     | exception End_of_file -> ()
   in
   loop ()
   
-let main outputfile paths =
-  let oc = match outputfile with
-    | "" -> stdout
-    | outputfile -> open_out outputfile
-  in
+let main paths =
   let paths = if paths = [] then ["-"] else paths in
   List.iter
     (function
-      | "-" -> paths_of_stdin stdin oc
-      | path -> traverse oc path)
-    paths;
-  if oc <> stdout then
-    close_out_noerr oc
+      | "-" -> paths_of_stdin ()
+      | path -> traverse path)
+    paths
 
 let () =
   let open Cmdliner in
   let cmd =
-    let outputfile =
-      Arg.(value & opt string "" & info ["o" ; "output"]
-             ~doc:"Output file, stdout if not specified.")
-    in
     let paths =
       Arg.(value & pos_all string [] & info []
              ~doc:"Sei la caraleo.")
     in
     Cmd.v
       (Cmd.info "xspfmaker" ~doc:"xspfmaker whatever")
-      Term.(const main $ outputfile $ paths)
+      Term.(const main $ paths)
   in
   exit @@ Cmd.eval cmd
