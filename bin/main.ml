@@ -5,39 +5,40 @@ let _xspf_header =
 	<trackList>
 |}
 
-let consider_file path =
+(* I still can't believe they made stderr buffered *)
+let warn fmt =
+  Printf.ksprintf (fun s -> Printf.eprintf "%s\n%!" s) fmt
+
+let process_file oc path =
   match Av.open_input path with
   | exception (Avutil.Error e) ->
-    Printf.eprintf "%s: error %s%!\n" path (Avutil.string_of_error e)
+    warn "%s: error %s" path (Avutil.string_of_error e)
   | handle ->
     (match Av.get_input_duration handle with
-     | Some duration ->
-       Printf.printf "%s: duration %Lu\n%!" path duration
-     | None ->
-       Printf.eprintf "%s: NO DURATION !!!\n%!" path;
+     | Some duration when duration > 0L ->
+       Printf.fprintf oc "%s: duration %Lu\n%!" path duration
+     | Some duration when duration <= 0L ->
+       warn "%s: insane duration %Lu, using 10" path duration
+     | _ ->
+       warn "%s: NO DURATION !!!" path;
        Av.close handle)
 
-let traverse path queue =
+let traverse oc path =
   let rec loop path =
     match (Unix.LargeFile.stat path).st_kind with
-    | S_REG -> Queue.add path queue
+    | exception Unix.Unix_error (errno, _, _) ->
+      warn "%s: %s" path (Unix.error_message errno)
+    | S_REG -> process_file oc path
     | S_DIR ->
       (match Sys.readdir path with
        | children ->
          Array.fast_sort String.compare children;
-         Array.iter (fun child -> loop (Printf.sprintf "%s/%s" path child)) children
-       | exception (Sys_error e) -> Printf.eprintf "%s%!\n" e)
+         Array.iter (fun child ->
+             (loop [@tailcall]) (Printf.sprintf "%s/%s" path child)) children
+       | exception (Sys_error e) -> warn "%s" e)
     | _ -> ()
   in
   loop path
-
-let rec dump_queue oc queue =
-  match Queue.take_opt queue with
-  | None -> ()
-  | Some path ->
-    consider_file path;
-    (* Printf.fprintf oc "%s\n%!" path; *)
-    dump_queue oc queue
 
 let paths_of_filelist ic =
   let rec loop l =
@@ -48,9 +49,7 @@ let paths_of_filelist ic =
   loop [] |> List.rev
   
 let xspfmaker oc paths =
-  let queue = Queue.create () in
-  List.iter (fun path -> traverse path queue) paths;
-  dump_queue oc queue
+  List.iter (fun path -> traverse oc path) paths
 
 let main outputfile paths =
   let outputfile = match outputfile with
