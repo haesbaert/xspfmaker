@@ -1,0 +1,7 @@
+*.byte
+*.native
+_build
+*.install
+.merlin
+cscope.out
+cscope.files
