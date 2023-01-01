@@ -35,11 +35,22 @@ let output_footer num_ids =
 </playlist>
  |}
 
-let _xml_escape s = s
+let output_escaped og =
+  for i = 0 to (String.length og) - 1 do
+    match String.get og i with
+    | '<' -> print_string "&lt;"
+    | '>' -> print_string "&gt;"
+    | '&' -> print_string "&amp;"
+    | '"' -> print_string "&quot;"
+    | '\'' -> print_string "&apos;"
+    | c -> print_char c
+  done
 
 let output_track location duration id =
   Printf.printf "\t\t<track>\n";
-  Printf.printf "\t\t\t<location>file://%s</location>\n" location;
+  Printf.printf "\t\t\t<location>file://";
+  output_escaped location;
+  Printf.printf "</location>\n";
   Printf.printf "\t\t\t<duration>%Lu</duration>\n" duration;
   Printf.printf "\t\t\t<extension application=\"http://www.videolan.org/vlc/playlist/0\">\n";
   Printf.printf "\t\t\t\t<vlc:id>%d</vlc:id>\n" id;
