@@ -120,7 +120,7 @@ let paths_of_stdin id =
   in
   loop id
   
-let main paths =
+let xspfmaker paths =
   let paths = if paths = [] then ["-"] else paths in
   output_header ();
   List.fold_left
@@ -138,10 +138,10 @@ let () =
   let cmd =
     let paths =
       Arg.(value & pos_all string [] & info []
-             ~doc:"Sei la caraleo.")
+             ~doc:"no clue" ~docv:"Sei la caraleo.")
     in
     Cmd.v
       (Cmd.info "xspfmaker" ~doc:"xspfmaker whatever")
-      Term.(const main $ paths)
+      Term.(const xspfmaker $ paths)
   in
   exit @@ Cmd.eval cmd
