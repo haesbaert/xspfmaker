@@ -40,29 +40,27 @@ let traverse oc path =
   in
   loop path
 
-let paths_of_filelist ic =
-  let rec loop l =
+let paths_of_stdin ic oc =
+  let rec loop () =
     match input_line ic with
-    | path -> loop @@ path :: l
-    | exception End_of_file -> l
+    | path -> traverse oc path; loop ()
+    | exception End_of_file -> ()
   in
-  loop [] |> List.rev
+  loop ()
   
-let xspfmaker oc paths =
-  List.iter (fun path -> traverse oc path) paths
-
 let main outputfile paths =
-  let outputfile = match outputfile with
+  let oc = match outputfile with
     | "" -> stdout
     | outputfile -> open_out outputfile
   in
-  let paths = match paths with
-    | "-" :: [] | [] -> paths_of_filelist stdin
-    | paths -> paths
-  in
-  xspfmaker outputfile paths;
-  if outputfile <> stdout then
-    close_out_noerr outputfile
+  let paths = if paths = [] then ["-"] else paths in
+  List.iter
+    (function
+      | "-" -> paths_of_stdin stdin oc
+      | path -> traverse oc path)
+    paths;
+  if oc <> stdout then
+    close_out_noerr oc
 
 let () =
   let open Cmdliner in
