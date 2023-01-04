@@ -14,6 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+type title_fmt = Path | Filename
+
+type config = {
+  title_fmt : title_fmt;
+}
+
 let output_header () =
   output_string stdout
 {|<?xml version="1.0" encoding="UTF-8"?>
@@ -35,6 +41,7 @@ let output_footer num_ids =
 </playlist>
  |}
 
+(* standard xml escaping *)
 let output_escaped og =
   for i = 0 to (String.length og) - 1 do
     match String.get og i with
@@ -46,22 +53,21 @@ let output_escaped og =
     | c -> print_char c
   done
 
-let output_title location =
-  let title =
-    Printf.sprintf "%s/%s"
-      Filename.(dirname location |> basename)
-      (Filename.basename location)
+let output_title fmt location =
+  let title = match fmt with
+    | Path -> location
+    | Filename -> Filename.basename location
   in
   Printf.printf "\t\t\t<title>";
   output_escaped title;
   Printf.printf "</title>\n"
 
-let output_track location duration id =
+let output_track title_fmt location duration id =
   Printf.printf "\t\t<track>\n";
   Printf.printf "\t\t\t<location>file://";
   output_escaped location;
   Printf.printf "</location>\n";
-  output_title location;
+  output_title title_fmt location;
   Printf.printf "\t\t\t<duration>%Lu</duration>\n" duration;
   Printf.printf "\t\t\t<extension application=\"http://www.videolan.org/vlc/playlist/0\">\n";
   Printf.printf "\t\t\t\t<vlc:id>%d</vlc:id>\n" id;
@@ -72,7 +78,7 @@ let output_track location duration id =
 (* I still can't believe they made stderr buffered *)
 let warn fmt = Printf.ksprintf (fun s -> Printf.eprintf "%s\n%!" s) fmt
 
-let process_file path id =
+let process_file cf path id =
   match Av.open_input path with
   | exception Avutil.Error e ->
     warn "%s: error %s" path (Avutil.string_of_error e);
@@ -80,12 +86,12 @@ let process_file path id =
   | handle ->
     (match Av.get_input_duration handle with
      | Some duration when duration > 0L ->
-       output_track path duration id;
+       output_track cf.title_fmt path duration id;
        Av.close handle;
        succ id
      | Some duration when duration <= 0L ->
        warn "%s: insane duration %Lu, using 10" path duration;
-       output_track path duration id;
+       output_track cf.title_fmt path duration id;
        Av.close handle;
        succ id
      | _ ->
@@ -93,12 +99,13 @@ let process_file path id =
        Av.close handle;
        id)
 
-let traverse path id =
+(* traverse path, bumping id for each valid file and returning next_id *)
+let traverse cf path id : int =
   let rec loop path id : int =
     match (Unix.LargeFile.stat path).st_kind with
     | exception Unix.Unix_error (errno, _, _) ->
       warn "%s: %s" path (Unix.error_message errno); id
-    | S_REG -> process_file path id
+    | S_REG -> process_file cf path id
     | S_DIR ->
       (match Sys.readdir path with
        | children ->
@@ -112,23 +119,25 @@ let traverse path id =
   in
   loop path id
 
-let paths_of_stdin id =
+(* parse and traverse each path from stdin *)
+let paths_of_stdin cf id : int =
   let rec loop id =
     match input_line stdin with
-    | path -> traverse path id |> loop
+    | path -> traverse cf path id |> loop
     | exception End_of_file -> id
   in
   loop id
   
-let xspfmaker paths =
+let xspfmaker title_fmt paths =
+  let cf = { title_fmt } in
   let paths = if paths = [] then ["-"] else paths in
   output_header ();
   List.fold_left
     (fun id path ->
        if path = "-" then
-         paths_of_stdin id
+         paths_of_stdin cf id
        else
-         traverse path id)
+         traverse cf path id)
     0 paths
   |>
   output_footer
@@ -136,12 +145,26 @@ let xspfmaker paths =
 let () =
   let open Cmdliner in
   let cmd =
+    let title_fmt =
+      let doc =
+        "Specifies the format of the title of each track, $(docv) must be either $(b,path) \
+         or $(b,filename). If $(b,path) the title is the complete file path. If $(b,filename) \
+         just the actual filename is used as the title."
+      in
+      let docv = "fmt" in
+      let myconv = Arg.enum [("path", Path); ("filename", Filename)] in
+      Arg.(value & opt myconv Filename & info ["t"; "titlefmt"] ~doc ~docv)
+    in
     let paths =
-      Arg.(value & pos_all string [] & info []
-             ~doc:"no clue" ~docv:"Sei la caraleo.")
+      let doc =
+        "List of $(docv) to be traversed. All files in the subtree will be considered for the playlist, \
+         by querying its duration via ffmpeg. Discarded files are printed out on stderr."
+      in
+      let docv = "PATHS" in
+      Arg.(value & pos_all string [] & info [] ~doc ~docv)
     in
     Cmd.v
       (Cmd.info "xspfmaker" ~doc:"xspfmaker whatever")
-      Term.(const xspfmaker $ paths)
+      Term.(const xspfmaker $ title_fmt $ paths)
   in
   exit @@ Cmd.eval cmd
