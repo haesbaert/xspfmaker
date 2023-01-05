@@ -119,15 +119,6 @@ let traverse cf path id : int =
   in
   loop path id
 
-(* parse and traverse each path from stdin *)
-let paths_of_stdin cf id : int =
-  let rec loop id =
-    match input_line stdin with
-    | path -> traverse cf path id |> loop
-    | exception End_of_file -> id
-  in
-  loop id
-
 (* maybe strip trailing / from path *)
 let rec path_without_slash path =
   let last = pred @@ String.length path in
@@ -141,7 +132,16 @@ let rec path_without_slash path =
         path_without_slash (String.sub path 0 last)
       else
         path
-  
+
+(* parse and traverse each path from stdin *)
+let paths_of_stdin cf id : int =
+  let rec loop id =
+    match input_line stdin with
+    | path -> traverse cf (path_without_slash path) id |> loop
+    | exception End_of_file -> id
+  in
+  loop id
+
 let xspfmaker title_fmt paths =
   let cf = { title_fmt } in
   output_header ();
