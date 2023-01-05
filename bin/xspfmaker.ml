@@ -150,17 +150,15 @@ let () =
         "Specifies the format of the title of each track, $(docv) must be either $(b,path) \
          or $(b,filename). If $(b,path) the title is the complete file path. If $(b,filename) \
          just the actual filename is used as the title."
-      in
-      let docv = "fmt" in
-      let myconv = Arg.enum [("path", Path); ("filename", Filename)] in
-      Arg.(value & opt myconv Filename & info ["t"; "titlefmt"] ~doc ~docv)
+      and docv = "FMT" in
+      let t = Arg.enum [("path", Path); ("filename", Filename)] in
+      Arg.(value & opt t Filename & info ["t"; "title-format"] ~doc ~docv)
     in
     let paths =
       let doc =
-        "List of $(docv) to be traversed. All files in the subtree will be considered for the playlist, \
+        "List of $(docv) to be traversed. All files in the subtree will be considered for the playlist \
          by querying its duration via ffmpeg. Discarded files are printed out on stderr."
-      in
-      let docv = "PATHS" in
+      and docv = "PATHS" in
       Arg.(value & pos_all string [] & info [] ~doc ~docv)
     in
     Cmd.v
