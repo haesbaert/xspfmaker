@@ -127,19 +127,33 @@ let paths_of_stdin cf id : int =
     | exception End_of_file -> id
   in
   loop id
+
+(* maybe strip trailing / from path *)
+let rec path_without_slash path =
+  let last = pred @@ String.length path in
+  if last = 0 then
+    path
+  else
+    match String.rindex_opt path '/' with
+    | None -> path
+    | Some idx ->
+      if idx = last then
+        path_without_slash (String.sub path 0 last)
+      else
+        path
   
 let xspfmaker title_fmt paths =
   let cf = { title_fmt } in
-  let paths = if paths = [] then ["-"] else paths in
   output_header ();
+  let paths = if paths = [] then ["-"] else paths in
   List.fold_left
     (fun id path ->
+       let path = path_without_slash path in
        if path = "-" then
          paths_of_stdin cf id
        else
          traverse cf path id)
-    0 paths
-  |>
+    0 paths |>
   output_footer
 
 let () =
