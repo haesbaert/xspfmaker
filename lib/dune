@@ -1,0 +1,3 @@
+(library
+ (name xspfmaker)
+  (libraries ffmpeg-av))

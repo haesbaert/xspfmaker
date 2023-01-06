@@ -1,4 +1,4 @@
 (executable
  (public_name xspfmaker)
  (name xspfmaker)
- (libraries ffmpeg-av cmdliner))
+ (libraries xspfmaker cmdliner))
