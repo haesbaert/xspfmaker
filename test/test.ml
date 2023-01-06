@@ -97,18 +97,30 @@ let expected_path =
 
 let test_output mode expected =
   let rp, wp = Unix.pipe () in
+  let erp, ewp = Unix.pipe () in
   let ic = Unix.in_channel_of_descr rp in
+  let eic = Unix.in_channel_of_descr erp in
   match Unix.fork () with
   | 0 -> (* child *)
     Unix.close Unix.stdout;
+    Unix.close Unix.stderr;
     Unix.dup wp |> ignore;
+    Unix.dup ewp |> ignore;
     let path = Printf.sprintf "%s/data" (Sys.getcwd ()) in
     Xspfmaker.xspfmaker mode [path];
     Unix._exit 0
   | _pid -> (* parent *)
     Unix.close wp;
+    Unix.close ewp;
     let output = In_channel.input_all ic in
     In_channel.close ic;
+    let eoutput = In_channel.input_all eic in
+    In_channel.close eic;
+    let eexpected =
+      Printf.sprintf
+        "%s/data/empty: error Invalid data found when processing input\n"
+        (Sys.getcwd ())
+    in
     (* let outf = open_out "/tmp/output" in *)
     (* let expectedf = open_out "/tmp/expected" in *)
     (* output_string outf output; *)
@@ -117,7 +129,8 @@ let test_output mode expected =
     (* Out_channel.close expectedf; *)
     (* Printf.eprintf "output=%d expected=%d\n%!" *)
     (*   (String.length output) (String.length expected); *)
-    assert (output = expected)
+    assert (output = expected);
+    assert (eoutput = eexpected)
 
 let () =
   test_output Xspfmaker.Filename expected_filename;
