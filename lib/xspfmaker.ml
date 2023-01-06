@@ -99,6 +99,11 @@ let process_file cf path id =
        Av.close handle;
        id)
 
+let check_path path =
+  if String.get path 0 <> '/' then
+    invalid_arg @@ Printf.sprintf
+      "\'%s\' is not a full path, must start with /" path
+
 (* traverse path, bumping id for each valid file and returning next_id *)
 let traverse cf path id : int =
   let rec loop path id : int =
@@ -117,6 +122,7 @@ let traverse cf path id : int =
        | exception (Sys_error e) -> warn "%s" e; id)
     | _ -> id
   in
+  check_path path;
   loop path id
 
 (* maybe strip trailing / from path *)
