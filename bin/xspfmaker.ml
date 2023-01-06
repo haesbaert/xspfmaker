@@ -16,6 +16,17 @@
 
 open Xspfmaker
 
+let preprocess title_fmt input output paths =
+  let input = match input with
+    | None -> stdin
+    | Some file -> open_in file
+  in
+  let output = match output with
+    | None -> stdout
+    | Some file -> open_out file
+  in
+  xspfmaker title_fmt input output paths
+
 let () =
   let open Cmdliner in
   let cmd =
@@ -28,6 +39,18 @@ let () =
       let t = Arg.enum [("path", Path); ("filename", Filename)] in
       Arg.(value & opt t Filename & info ["t"; "title-format"] ~doc ~docv)
     in
+    let input =
+      let doc =
+        "input"
+      and docv = "INPUTFILE" in
+      Arg.(value & opt (some string) None & info ["-i"; "input-file"] ~doc ~docv)
+    in
+    let output =
+      let doc =
+        "output"
+      and docv = "OUTPUTFILE" in
+      Arg.(value & opt (some string) None & info ["-o"; "output-file"] ~doc ~docv)
+    in
     let paths =
       let doc =
         "List of $(docv) to be traversed. All files in the subtree will be considered for the playlist \
@@ -37,6 +60,6 @@ let () =
     in
     Cmd.v
       (Cmd.info "xspfmaker" ~doc:"Make xspf playlists")
-      Term.(const xspfmaker $ title_fmt $ paths)
+      Term.(const preprocess $ title_fmt $ input $ output $ paths)
   in
   exit @@ Cmd.eval cmd
