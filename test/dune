@@ -1,0 +1,5 @@
+(test
+ (name test)
+ (libraries xspfmaker unix)
+ (deps
+  (source_tree data)))

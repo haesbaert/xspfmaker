@@ -39,7 +39,7 @@ let output_footer num_ids =
   output_string stdout
 {|	</extension>
 </playlist>
- |}
+|}
 
 (* standard xml escaping *)
 let output_escaped og =
@@ -160,4 +160,6 @@ let xspfmaker title_fmt paths =
        else
          traverse cf path id)
     0 paths |>
-  output_footer
+  output_footer;
+  flush stdout;
+  flush stderr
