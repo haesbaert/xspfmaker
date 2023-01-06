@@ -148,7 +148,7 @@ let paths_of_stdin cf id : int =
   in
   loop id
 
-let xspfmaker title_fmt paths =
+let xspfmaker1 title_fmt paths () =
   let cf = { title_fmt } in
   output_header ();
   let paths = if paths = [] then ["-"] else paths in
@@ -160,6 +160,7 @@ let xspfmaker title_fmt paths =
        else
          traverse cf path id)
     0 paths |>
-  output_footer;
-  flush stdout;
-  flush stderr
+  output_footer
+
+let xspfmaker title_fmt paths =
+  Fun.protect ~finally:flush_all @@ xspfmaker1 title_fmt paths
