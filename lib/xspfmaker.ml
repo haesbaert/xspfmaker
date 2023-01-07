@@ -31,17 +31,13 @@ let output_header output =
 |}
 
 let output_footer output num_ids =
-  output_string output
-{|	</trackList>
-	<extension application="http://www.videolan.org/vlc/playlist/0">
-|};
+  output_string output "\t</trackList>\n";
+  output_string output "\t<extension application=\"http://www.videolan.org/vlc/playlist/0\">\n";
   for i = 0 to num_ids - 1 do
     Printf.fprintf output "\t\t<vlc:item tid=\"%d\"/>\n" i
   done;
-  output_string output
-{|	</extension>
-</playlist>
-|}
+  output_string output "\t</extension>\n";
+  output_string output "</playlist>\n"
 
 (* standard xml escaping *)
 let output_escaped output og =
@@ -60,21 +56,21 @@ let output_title output fmt location =
     | Path -> location
     | Filename -> Filename.basename location
   in
-  Printf.fprintf output "\t\t\t<title>";
+  output_string output "\t\t\t<title>";
   output_escaped output title;
-  Printf.fprintf output "</title>\n"
+  output_string output "</title>\n"
 
 let output_track output title_fmt location duration id =
-  Printf.fprintf output "\t\t<track>\n";
-  Printf.fprintf output "\t\t\t<location>file://";
+  output_string output "\t\t<track>\n";
+  output_string output "\t\t\t<location>file://";
   output_escaped output location;
-  Printf.fprintf output "</location>\n";
+  output_string output "</location>\n";
   output_title output title_fmt location;
   Printf.fprintf output "\t\t\t<duration>%Lu</duration>\n" duration;
-  Printf.fprintf output "\t\t\t<extension application=\"http://www.videolan.org/vlc/playlist/0\">\n";
+  output_string output "\t\t\t<extension application=\"http://www.videolan.org/vlc/playlist/0\">\n";
   Printf.fprintf output "\t\t\t\t<vlc:id>%d</vlc:id>\n" id;
-  Printf.fprintf output "\t\t\t</extension>\n";
-  Printf.fprintf output "\t\t</track>\n";
+  output_string output "\t\t\t</extension>\n";
+  output_string output "\t\t</track>\n";
   flush output
 
 (* I still can't believe they made stderr buffered *)

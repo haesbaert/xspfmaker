@@ -104,6 +104,16 @@ let test_output mode expected =
   Out_channel.close oc;
   let output = In_channel.input_all ic in
   In_channel.close ic;
+  if output <> expected then begin
+    let got = open_out "/tmp/got" in
+    let ex = open_out "/tmp/expected" in
+    output_string got output;
+    output_string ex expected;
+    close_out got;
+    close_out ex;
+    Unix.system "diff -u /tmp/got /tmp/expected" |> ignore;
+    output_string stderr "Check /tmp/got vs /tmp/expected\n"
+  end;
   assert (output = expected)
 
 let test_filelist mode expected =
