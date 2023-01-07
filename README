@@ -1,0 +1,66 @@
+NAME
+       xspfmaker - make xspf playlists
+
+SYNOPSIS
+       xspfmaker [--input-file=INPUTFILE] [--output-file=OUTPUTFILE]
+       [--title-format=FMT] [OPTION]… [PATHS]…
+
+DESCRIPTION
+       xspfmaker creates xspf playlists of media files to be used in players
+       like vlc(1). Each path in PATHS is traversed and scanned for suitable
+       files. A list of PATHS as one per line can also be read from stdin by
+       not passing it any PATHS or passing it a -. See the EXAMPLES section.
+
+ARGUMENTS
+       PATHS
+           List of PATHS to be traversed. All files in the subtree will be
+           considered for the playlist by querying its duration via ffmpeg.
+           Discarded files are printed out on stderr.
+
+OPTIONS
+       -i INPUTFILE, --input-file=INPUTFILE
+           Input file with a list of one path per line to be to be used in
+           addition to PATHS.
+
+       -o OUTPUTFILE, --output-file=OUTPUTFILE
+           Output file to be used instead of stdout.
+
+       -t FMT, --title-format=FMT (absent=filename)
+           Specifies the format of the title of each track, FMT must be
+           either path or filename. If path the title is the complete file
+           path. If filename just the actual filename is used as the title.
+           If empty or -, read a list of one path per line from stdin.
+
+COMMON OPTIONS
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of auto,
+           pager, groff or plain. With auto, the format is pager or plain
+           whenever the TERM env var is dumb or undefined.
+
+EXIT STATUS
+       xspfmaker exits 0 on success, and > 0 if an error occurs.
+
+EXAMPLES
+       Create a xspf list from two directories a single file:
+       $ xspfmaker ~/videos ~/nudes.mp4 /mnt/oldvids > playlist.xspf
+
+       or the equivalent:
+       $ xspfmaker -o playlist.xspf ~/videos ~/nudes.mp4 /mnt/oldvids
+
+       or the equivalent getting the list from stdin:
+       $ printf "~/videos\n~/nudes.mp4\n/mnt/oldvids" | xspfmaker -o
+       playlist.xspf
+
+       or the equivalent but parsing the list from a file:
+       $ printf "~/videos\n~/nudes.mp4\n/mnt/oldvids" > list &&
+       xspfmaker -o playlist.xspf -i list
+
+BUGS
+       https://github.com/haesbaert/xspfmaker/issues
+
+SEE ALSO
+       find(1), vlc(1)
+
+AUTHORS
+       Christiano Haesbaert <haesbaert@haesbaert.org>
+
