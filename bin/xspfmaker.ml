@@ -44,14 +44,15 @@ let () =
         `P ("xspfmaker -o playlist.xspf -i list" |> esc);
       ]
     in
-    let doc = "Display the last part of a file" in
+    let doc = "make xspf playlists" in
     let man = [
       `S Manpage.s_description;
-      `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
-        no file is specified reads standard input. The number of printed
-        lines can be  specified with the $(b,-n) option.";
+      `P "$(tname) creates xspf playlists of media files to be used in players like $(b,vlc)(1). \
+          Each path in $(i,PATHS) is traversed and scanned for suitable files. A list of \
+          $(i,PATHS) as one per line can also be read from stdin by not passing it any \
+          $(i,PATHS) or passing it a -. See the $(b,EXAMPLES) section.";
       `S Manpage.s_exit_status;
-      `P "$(b,xspfmaker) exits 0 on success, and > 0 if an error occurs.";
+      `P "$(tname) exits 0 on success, and > 0 if an error occurs.";
       `Blocks examples;
       `S Manpage.s_bugs;
       `P "https://github.com/haesbaert/xspfmaker/issues";
